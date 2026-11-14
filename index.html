@@ -7,14 +7,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#FFA9C4">
+<meta name="theme-color" content="#FFF7F0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pet Diary">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 html,body{margin:0;height:100%;background:#FFF7F0;transition:background .3s;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}
-#sb{position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:#FFA9C4;z-index:2;transition:background .3s}
+#sb{position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:#FFF7F0;z-index:2;transition:background .3s}
 iframe{position:fixed;left:0;right:0;top:env(safe-area-inset-top);bottom:0;width:100%;height:calc(100% - env(safe-area-inset-top));border:0;background:transparent}
 #setup{position:fixed;inset:0;display:none;place-items:center;padding:24px;text-align:center;color:#4B3A34}
 #setup.on{display:grid}
@@ -44,7 +44,9 @@ iframe{position:fixed;left:0;right:0;top:env(safe-area-inset-top);bottom:0;width
   try { th = JSON.parse(localStorage.getItem('pd_theme') || 'null'); } catch(e) {}
   function paint(t){
     if (!t || !/^#[0-9A-Fa-f]{6}$/.test(t.color || '')) return;
-    meta.setAttribute('content', t.color);
+    var nm = document.createElement('meta'); nm.name = 'theme-color'; nm.content = t.color;
+    if (meta && meta.parentNode) meta.parentNode.replaceChild(nm, meta); else document.head.appendChild(nm);
+    meta = nm;
     sb.style.background = t.color;
     if (/^#[0-9A-Fa-f]{6}$/.test(t.bg || '')) document.body.style.background = document.documentElement.style.background = t.bg;
   }
@@ -52,13 +54,14 @@ iframe{position:fixed;left:0;right:0;top:env(safe-area-inset-top);bottom:0;width
   window.addEventListener('message', function(e){
     var d = e.data && e.data.pdTheme;
     if (!d || !/(\.googleusercontent\.com|script\.google\.com)$/.test(e.origin.replace(/:\d+$/, ''))) return;
-    var t = { accent: String(d.accent || ''), mode: d.mode === 'dark' ? 'dark' : 'light', color: String(d.color || ''), bg: String(d.bg || '') };
-    paint(t);
+    var t = { accent: String(d.accent || ''), mode: d.mode === 'dark' ? 'dark' : 'light', style: String(d.style || ''), color: String(d.color || ''), bg: String(d.bg || '') };
+    paint(t); th = t;
     try { localStorage.setItem('pd_theme', JSON.stringify(t)); } catch(err) {}
+    try { e.source.postMessage({ pdAck: 1 }, '*'); } catch(err) {}
   });
   function withTheme(u){
     if (!th || !/^[a-z]+$/.test(th.accent || '')) return u;
-    return u + (u.indexOf('?') < 0 ? '?' : '&') + 'accent=' + th.accent + '&mode=' + th.mode;
+    return u + (u.indexOf('?') < 0 ? '?' : '&') + 'accent=' + th.accent + '&mode=' + th.mode + (/^[a-z]+$/.test(th.style || '') ? '&style=' + th.style : '');
   }
   function start(u){ f.src = withTheme(u); f.hidden = false; s.classList.remove('on'); }
   if (url) start(url); else s.classList.add('on');
